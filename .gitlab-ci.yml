@@ -1,0 +1,22 @@
+stages:
+  - build
+  - pub
+
+job1:
+  stage: build
+  script:
+    - rm -rf /etc/gitlab-runner/project/air_arctivity
+    - mkdir /etc/gitlab-runner/project/air_arctivity
+    - cp -r ./* /etc/gitlab-runner/project/air_arctivity
+    - cp -r /etc/gitlab-runner/project/.air_arctivity.env /etc/gitlab-runner/project/air_arctivity/.env
+    - echo "build=>cp finish"
+  tags:
+    - hyperf
+job2:
+  stage: pub
+  script:
+    - kubectl get pod -n api|grep air-arctivity-api | awk '{print $1}'  | xargs kubectl delete pod -n api
+    - kubectl get pods --all-namespaces -o go-template='{{range .items}} {{if (or (eq .status.phase "Evicted") (eq .status.phase "Failed" ))}} {{.metadata.name}}{{" "}} {{.metadata.namespace}} {{"\n"}}{{end}} {{end}}' | while read epod namespace; do kubectl -n $namespace delete pod $epod; done;
+    - echo "pub=>pod is restart"
+  tags:
+    - hyperf
